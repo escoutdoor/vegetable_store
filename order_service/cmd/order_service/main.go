@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 
 	"github.com/escoutdoor/vegetable_store/common/pkg/logger"
 	"github.com/escoutdoor/vegetable_store/order_service/internal/app"
@@ -18,16 +17,16 @@ func main() {
 
 	cfg, err := app.LoadConfig(".env")
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(ctx, "load config", err)
 	}
 
 	a, err := app.New(ctx, cfg)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(ctx, "new app", err)
 	}
 
 	err = a.Run(ctx)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(ctx, "run app", err)
 	}
 }
