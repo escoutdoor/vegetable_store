@@ -2,10 +2,9 @@ package pg
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/escoutdoor/vegetable_store/common/pkg/database"
+	"github.com/escoutdoor/vegetable_store/common/pkg/logger"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -80,9 +79,10 @@ func (p *pg) Close() {
 }
 
 func logQuery(ctx context.Context, q database.Query) {
-	log.Println(
+	logger.DebugKV(
 		ctx,
-		fmt.Sprintf("sql: %s", q.Name),
-		fmt.Sprintf("query: %s", q.Sql),
+		"log query",
+		"sql", q.Name,
+		"query", q.Sql,
 	)
 }
