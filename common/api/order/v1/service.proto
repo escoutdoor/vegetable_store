@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package order.v1;
+
+import "google/api/annotations.proto";
+import "order/v1/messages.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "gitbub.com/escoutdoor/vegetable_store/common/pkg/api/order/v1;order";
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Vegetable Store Order Service"
+    version: "1.0"
+    contact: {
+      name: "Ivan Popov"
+      email: "vanap387@gmail.com"
+    }
+  }
+  schemes: HTTP
+  schemes: HTTPS
+};
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/orders"
+      body: "*"
+    };
+  }
+
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse) {
+    option (google.api.http) = {get: "/v1/orders/{order_id}"};
+  }
+
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse) {
+    option (google.api.http) = {get: "/v1/orders"};
+  }
+}

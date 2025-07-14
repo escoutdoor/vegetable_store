@@ -1,0 +1,181 @@
+syntax = "proto3";
+
+package user.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
+
+option go_package = "gitbub.com/escoutdoor/vegetable_store/common/pkg/api/user/v1;user";
+
+message GetUserRequest {
+  // The identifier (UUID) of the user to retrieve.
+  string user_id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+message GetUserResponse {
+  // The retrieved user.
+  User user = 1;
+}
+
+message ListUsersRequest {
+  // Optional list of user identifiers (UUIDs) to filter by.
+  // If provided, only users with these IDs will be returned.
+  // All UUIDs in the list must be unique.
+  repeated string user_ids = 1 [(buf.validate.field).repeated = {
+    unique: true
+    items: {
+      string: {uuid: true}
+    }
+  }];
+
+  // Limit for pagination.
+  // Must be greater than or equal to 0.
+  // If unspecified, at most 10 users will be returned.
+  int64 limit = 2 [(buf.validate.field).int64 = {gte: 0}];
+
+  // Optional offset for pagination.
+  // Must be greater than or equal to 0 if provided.
+  // If unspecified, offset will be 0.
+  int64 offset = 3 [(buf.validate.field).int64 = {gte: 0}];
+}
+
+message ListUsersResponse {
+  // The list of users.
+  repeated User users = 1;
+
+  // The total size of the list of users.
+  int64 total_size = 2;
+}
+
+message UserUpdateOperation {
+  // The identifier (UUID) of the user to update.
+  string user_id = 1 [
+    (buf.validate.field).string.uuid = true,
+    (google.api.field_behavior) = IDENTIFIER
+  ];
+
+  // Optional: New first name for the user.
+  // Must be between 1 and 20 characters long if provided.
+  string first_name = 2;
+
+  // Optional: New last name for the user.
+  // Must be between 1 and 20 characters long if provided.
+  string last_name = 3;
+
+  // Optional: New email address for the user.
+  // Must be a valid email format if provided.
+  string email = 4;
+
+  // Optional: New phone number for the user.
+  // Should be a valid phone number format if provided.
+  string phone_number = 5;
+
+  // Optional: New password for the user.
+  // Must be at least 8 characters long.
+  // Must only contain alphanumeric characters (a-z, A-Z, 0-9)
+  // and the following special characters: !@#$%^&*()-_+=
+  string password = 6;
+}
+
+message UpdateUserRequest {
+  // The user data to update
+  // The update's "user_id" field is used to identify the user to update.
+  // Format: /v1/users/{user}
+  UserUpdateOperation update = 1 [(google.api.field_behavior) = REQUIRED];
+
+  google.protobuf.FieldMask update_mask = 2 [(buf.validate.field).cel = {
+    id: "valid_update_mask"
+    message: "an update mask path must be one of first_name, last_name, email, phone_number, and password"
+    expression: "this.paths.all(path, path in ['first_name', 'last_name', 'email', 'phone_number', 'password'])"
+  }];
+}
+
+// message UpdateUserRequest {
+//   // The identifier (UUID) of the user to update.
+//   string user_id = 1 [(buf.validate.field).string.uuid = true];
+//
+//   // Optional: New first name for the user.
+//   // Must be between 1 and 20 characters long if provided.
+//   google.protobuf.StringValue first_name = 2 [(buf.validate.field).string = {
+//     min_len: 1
+//     max_len: 20
+//   }];
+//
+//   // Optional: New last name for the user.
+//   // Must be between 1 and 20 characters long if provided.
+//   google.protobuf.StringValue last_name = 3 [(buf.validate.field).string = {
+//     min_len: 1
+//     max_len: 20
+//   }];
+//
+//   // Optional: New email address for the user.
+//   // Must be a valid email format if provided.
+//   google.protobuf.StringValue email = 4 [(buf.validate.field).string.email = true];
+//
+//   // Optional: New password for the user.
+//   // Must be at least 8 characters long.
+//   // Must only contain alphanumeric characters (a-z, A-Z, 0-9)
+//   // and the following special characters: !@#$%^&*()-_+=
+//   google.protobuf.StringValue password = 5 [(buf.validate.field).string = {
+//     min_len: 8
+//     pattern: "^[a-zA-Z0-9!@#$%^&*()-_+=]*$"
+//   }];
+//
+//   // Optional: New phone number for the user.
+//   // Should be a valid phone number format if provided.
+//   google.protobuf.StringValue phone_number = 6 [(buf.validate.field).string = {pattern: "^(\\+\\d{1,2}\\s)?\\(?\\d{3}\\)?[\\s.-]\\d{3}[\\s.-]\\d{4}$"}];
+// }
+
+message UpdateUserResponse {}
+
+message DeleteUserRequest {
+  // The identifier (UUID) of the user to delete.
+  string user_id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+message DeleteUserResponse {}
+
+message User {
+  // The unique identifier (UUID) of the user.
+  string id = 1;
+
+  // First name of the user.
+  string first_name = 2;
+
+  // Last name of the user.
+  string last_name = 3;
+
+  // Email address of the user.
+  string email = 4;
+
+  // Phone number of the user.
+  string phone_number = 5;
+}
+
+// message User {
+//   // The unique identifier (UUID) of the user.
+//   string id = 1 [(buf.validate.field).string.uuid = true];
+//
+//   // First name of the user.
+//   // Must be between 1 and 20 characters long.
+//   string first_name = 2 [(buf.validate.field).string = {
+//     min_len: 1
+//     max_len: 20
+//   }];
+//
+//   // Last name of the user.
+//   // Must be between 1 and 20 characters long.
+//   string last_name = 3 [(buf.validate.field).string = {
+//     min_len: 1
+//     max_len: 20
+//   }];
+//
+//   // Email address of the user.
+//   // Must be a valid email format.
+//   string email = 4 [(buf.validate.field).string.email = true];
+//
+//   // Phone number of the user.
+//   // Must be a valid phone number format (e.g., +1 555-555-5555).
+//   string phone_number = 5 [(buf.validate.field).string = {pattern: "^(\\+\\d{1,2}\\s)?\\(?\\d{3}\\)?[\\s.-]\\d{3}[\\s.-]\\d{4}$"}];
+// }

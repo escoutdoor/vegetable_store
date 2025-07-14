@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package auth.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "gitbub.com/escoutdoor/vegetable_store/common/pkg/api/auth/v1;auth";
+
+message RegisterRequest {
+  // First name of the user.
+  // Must be between 1 and 20 characters long.
+  string first_name = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 20
+  }];
+
+  // Last name of the user.
+  // Must be between 1 and 20 characters long.
+  string last_name = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 20
+  }];
+
+  // Email address of the user.
+  // Must be a valid email format.
+  string email = 3 [(buf.validate.field).string.email = true];
+
+  // Password.
+  // Must be a valid password:
+  // Must be at least 8 characters long.
+  // Must only contain alphanumeric characters (a-z, A-Z, 0-9)
+  // and the following special characters: !@#$%^&*()-_+=
+  string password = 4 [(buf.validate.field).string = {
+    min_len: 8
+    pattern: "^[a-zA-Z0-9!@#$%^&*()-_+=]*$"
+  }];
+
+  // Phone number.
+  // Should be a valid phone number.
+  google.protobuf.StringValue phone_number = 5 [(buf.validate.field).string = {pattern: "^(\\+\\d{1,2}\\s)?\\(?\\d{3}\\)?[\\s.-]\\d{3}[\\s.-]\\d{4}$"}];
+}
+
+message RegisterResponse {
+  // The unique identifier for the newly registered user.
+  // Must be a valid UUID.
+  string user_id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+message LoginRequest {
+  // Email address of the user attempting to log in.
+  // Must be a valid email format.
+  string email = 1 [(buf.validate.field).string.email = true];
+
+  // Password of the user.
+  // Must be at least 8 characters long.
+  // Must only contain alphanumeric characters (a-z, A-Z, 0-9)
+  // and the following special characters: !@#$%^&*()-_+=
+  string password = 2 [(buf.validate.field).string = {
+    min_len: 8
+    pattern: "^[a-zA-Z0-9!@#$%^&*()-_+=]*$"
+  }];
+}
+
+message LoginResponse {
+  // Access token for the authenticated session.
+  // Must be a JWT token.
+  string access_token = 1 [(buf.validate.field).string = {pattern: '^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$'}];
+
+  // Refresh token that can be used to obtain a new access token.
+  // Must be in a JWT token.
+  string refresh_token = 2 [(buf.validate.field).string = {pattern: '^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$'}];
+}
+
+message RefreshTokenRequest {
+  // The refresh token previously issued to the client.
+  // Must be in a JWT like format.
+  string refresh_token = 1 [(buf.validate.field).string = {pattern: '^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$'}];
+}
+
+message RefreshTokenResponse {
+  // A new access token for the authenticated session.
+  // Must be in a JWT like format.
+  string access_token = 1 [(buf.validate.field).string = {pattern: '^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$'}];
+
+  // A new refresh token.
+  // Must be in a JWT like format.
+  string refresh_token = 2 [(buf.validate.field).string = {pattern: '^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$'}];
+}
+
+message ValidateTokenRequest {
+  // The access token to be validated.
+  // Must be in a JWT like format.
+  string access_token = 1 [(buf.validate.field).string = {pattern: '^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$'}];
+}
+
+message ValidateTokenResponse {
+  // The unique identifier of the user associated with the validated access token.
+  // Must be a valid UUID.
+  string user_id = 1 [(buf.validate.field).string.uuid = true];
+}

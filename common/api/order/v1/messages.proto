@@ -1,0 +1,201 @@
+syntax = "proto3";
+
+package order.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+
+option go_package = "gitbub.com/escoutdoor/vegetable_store/common/pkg/api/order/v1;order";
+
+message CreateOrderRequest {
+  // Identifier of the user who made the order.
+  // Must be a valid uuid.
+  string user_id = 1 [
+    (buf.validate.field).string = {uuid: true},
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Vegetables that are selected to be ordered.
+  // Min number of items - 1.
+  repeated OrderItemInput order_items = 2 [
+    (buf.validate.field).repeated = {min_items: 1},
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message OrderItemInput {
+  // Identifier of the vegetable.
+  // Must be a valid uuid.
+  string vegetable_id = 1 [
+    (buf.validate.field).string = {uuid: true},
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Weight of the vegetable
+  // Must be greater that 0.0 kg
+  float weight = 2 [
+    (buf.validate.field).float = {gt: 0.0},
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Recipient information.
+  // There provided detailed information about recipient.
+  RecipientInfo recipient_info = 3 [
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Address.
+  // The address where this part of order will be delivered.
+  AddressInfo address_info = 4 [
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message OrderItem {
+  // Identifier of the order item.
+  string order_item_id = 1 [
+    (google.api.field_behavior) = IDENTIFIER
+  ];
+
+  // Identifier of the vegetable.
+  // Must be a valid uuid.
+  string vegetable_id = 2 [
+    (buf.validate.field).string = {uuid: true},
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Weight of the vegetable
+  // Must be greater that 0.0 kg
+  float weight = 3 [
+    (buf.validate.field).float = {gt: 0.0},
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Vegetable price per kg without discount.
+  float price = 4 [
+    (buf.validate.field).float = {gt: 0.0},
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Discounted price of the vegetable per kg.
+  // While there is no discount, it is equal to the price.
+  float discounted_price = 5 [
+    (buf.validate.field).float = {gt: 0.0},
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Recipient information.
+  // There provided detailed information about recipient.
+  RecipientInfo recipient_info = 6 [
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Address.
+  // The address where this part of order will be delivered.
+  AddressInfo address_info = 7 [
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message CreateOrderResponse {
+  // Identifier of the order that was just created.
+  string order_id = 1;
+}
+
+message GetOrderRequest {
+  // Identifier of the order.
+  // Must be a valid uuid.
+  string order_id = 1 [
+    (buf.validate.field).string = {uuid: true},
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message GetOrderResponse {
+  // Order.
+  // Contains detailed information about the order,
+  // the recipient and the vegetables that were ordered
+  Order order = 1;
+}
+
+message Order {
+  // Identifier of the order.
+  // Must be a valid uuid.
+  string id = 1 [
+    (buf.validate.field).string = {uuid: true},
+    (google.api.field_behavior) = IDENTIFIER
+  ];
+
+  // Identifier of the user who made the order.
+  // Must be a valid uuid.
+  string user_id = 2 [(buf.validate.field).string = {uuid: true}];
+
+  // Total amount.
+  float total_amount = 3 [(buf.validate.field).float = {gt: 0.0}];
+
+  // Order items.
+  repeated OrderItem order_items = 4;
+}
+
+message RecipientInfo {
+  // First name of the order recipient.
+  // Must be at least 2 characters long.
+  string first_name = 1 [(buf.validate.field).string = {min_len: 2}];
+
+  // Last name of the order recipient.
+  // Must be at least 2 characters long.
+  string last_name = 2 [(buf.validate.field).string = {min_len: 2}];
+
+  // Phone number of the recipient.
+  // Must be 9 numbers long.
+  string phone_number = 3 [(buf.validate.field).string = {len: 9}];
+
+  // Email of the recipient.
+  // Must be a valid email address.
+  string email = 4 [(buf.validate.field).string = {email: true}];
+}
+
+message AddressInfo {
+  // Address.
+  // The address where the order will be delivered.
+  string address = 1 [(buf.validate.field).string = {min_len: 5}];
+}
+
+message ListOrdersRequest {
+  // Identifier of the user who made orders
+  // Must be a valid uuid.
+  string user_id = 1;
+
+  // The maximum number of orders to return. The service may return fewer than
+  // this value.
+  // If unspecified or equals to 0, at most 50 orders will be returned.
+  // The maximum value is 1000.
+  int64 limit = 2 [(buf.validate.field).int64 = {
+    gte: 0
+    lte: 1000
+  }];
+
+  // Pagination offset (0-based)
+  int64 offset = 3 [(buf.validate.field).int64 = {gte: 0}];
+
+  // Filter by specific order IDs
+  // Example: ["14afdc88-596e-413d-98cc-d637b0c69c80", "e2c0a7d8-4a2f-4e8d-bd6a-8f8b8d7d8e9f"]
+  repeated string order_ids = 4 [(buf.validate.field).repeated = {
+    unique: true
+    items: {
+      string: {uuid: true}
+    }
+  }];
+}
+
+message ListOrdersResponse {
+  // The list of orders.
+  repeated Order orders = 1;
+
+  // The total size of the list of orders.
+  int64 total_size = 2;
+}

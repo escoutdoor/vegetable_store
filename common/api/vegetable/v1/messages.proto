@@ -1,0 +1,200 @@
+syntax = "proto3";
+
+package vegetable.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
+
+option go_package = "gitbub.com/escoutdoor/vegetable_store/common/pkg/api/vegetable/v1;vegetable";
+
+// message Name {
+//   string value = 1 [
+//     (buf.validate.field).string = {
+//       min_len: 3
+//       max_len: 25
+//     }
+//   ];
+// }
+
+message CreateVegetableRequest {
+  // The name of the vegetable
+  // Example: "Apples"
+  string name = 1 [
+    (buf.validate.field).string = {
+      min_len: 3
+      max_len: 25
+    },
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Weight
+  float weight = 2 [
+    (buf.validate.field).float = {gt: 0.0},
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Vegetable price per kg without discount.
+  float price = 4 [
+    (buf.validate.field).float = {gt: 0.0},
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Discounted price of the vegetable per kg.
+  // While there is no discount, it is equal to the price.
+  float discounted_price = 5 [
+    (buf.validate.field).float = {gt: 0.0},
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message CreateVegetableResponse {
+  // Identifier of the created vegetable
+  string vegetable_id = 1;
+}
+
+message DeleteVegetableRequest {
+  // Identifier of the vegetable to delete
+  // Must be a valid UUID
+  // Example: "14afdc88-596e-413d-98cc-d637b0c69c80"
+  string vegetable_id = 1 [
+    (buf.validate.field).string = {uuid: true},
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message DeleteVegetableResponse {}
+
+message GetVegetableRequest {
+  // Identifier of the vegetable to get
+  // Must be a valid UUID
+  // Example: "14afdc88-596e-413d-98cc-d637b0c69c80"
+  string vegetable_id = 1 [
+    (buf.validate.field).string = {uuid: true},
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message GetVegetableResponse {
+  // Vegetable
+  Vegetable vegetable = 1;
+}
+
+message ListVegetablesRequest {
+  // The maximum number of vegetables to return. The service may return fewer than
+  // this value.
+  // If unspecified or equals to 0, at most 50 vegetables will be returned.
+  // The maximum value is 1000.
+  int64 limit = 1 [(buf.validate.field).int64 = {
+    gte: 0
+    lte: 1000
+  }];
+
+  // Pagination offset (0-based)
+  // Example: 20
+  int64 offset = 2 [(buf.validate.field).int64 = {gte: 0}];
+
+  // Filter by specific vegetable IDs
+  // Example: ["14afdc88-596e-413d-98cc-d637b0c69c80", "e2c0a7d8-4a2f-4e8d-bd6a-8f8b8d7d8e9f"]
+  repeated string vegetable_ids = 3 [(buf.validate.field).repeated = {
+    unique: true
+    items: {
+      string: {uuid: true}
+    }
+  }];
+}
+
+message ListVegetablesResponse {
+  // The list of vegetables.
+  repeated Vegetable vegetables = 1;
+
+  // The total size of the list of vegetables.
+  int64 total_size = 2;
+}
+
+message VegetableUpdateOperation {
+  // Identifier of the vegetable
+  // Must be a valid UUID
+  // Example: "14afdc88-596e-413d-98cc-d637b0c69c80"
+  string vegetable_id = 1 [
+    (buf.validate.field).string = {uuid: true},
+    (google.api.field_behavior) = IDENTIFIER
+  ];
+
+  // Optional. Name of the vegetable
+  // Must be between 3 and 25 characters long if provided.
+  // Example: "Apples"
+  string name = 2;
+  // Name name = 2;
+
+  // Optional. Weight
+  // Must be greater than 0 if provided
+  // Example: 0.4
+  float weight = 3;
+
+  // Optional. Price
+  // Must be greater than 0 if provided
+  // Example: 75.99
+  float price = 4;
+
+  // Optional. Discounted price of the vegetable per kg.
+  // Must be greater than 0 if provided
+  // Example: 69.99
+  float discounted_price = 5;
+}
+
+message UpdateVegetableRequest {
+  // The vegetable data to update
+  // The update's "vegetable_id" field is used to identify the vegetable to update.
+  // Format: /v1/vegetables/{user}
+  VegetableUpdateOperation update = 1 [(google.api.field_behavior) = REQUIRED];
+
+  google.protobuf.FieldMask update_mask = 2 [(buf.validate.field).cel = {
+    id: "valid_update_mask"
+    message: "an update mask path must be one of name, weight, price, and discounted_price"
+    expression: "this.paths.all(path, path in ['name', 'weight', 'price', 'discounted_price'])"
+  }];
+}
+
+message UpdateVegetableResponse {}
+
+message BatchUpdateVegetablesRequest {
+  // The request message specifying the resources to update.
+  // A maximum of 1000 vegetables can be modified in a batch.
+  repeated UpdateVegetableRequest requests = 1 [
+    (buf.validate.field).repeated = {
+      min_items: 1
+      max_items: 1000
+    },
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message BatchUpdateVegetablesResponse {
+  // Vegetables updated.
+  repeated Vegetable vegetables = 1;
+}
+
+message Vegetable {
+  // Identifier of the vegetable
+  string id = 1 [
+    (buf.validate.field).string = {uuid: true},
+    (google.api.field_behavior) = IDENTIFIER
+  ];
+
+  // Name of the vegetable
+  string name = 2 [(buf.validate.field).string = {
+    min_len: 3
+    max_len: 25
+  }];
+
+  // Weight
+  float weight = 3 [(buf.validate.field).float = {gt: 0.0}];
+
+  // Vegetable price per kg without discount.
+  float price = 4 [(buf.validate.field).float = {gt: 0.0}];
+
+  // Discounted price of the vegetable per kg.
+  // While there is no discount, it is equal to the price.
+  float discounted_price = 5 [(buf.validate.field).float = {gt: 0.0}];
+}

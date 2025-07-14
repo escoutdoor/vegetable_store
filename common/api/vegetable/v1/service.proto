@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package vegetable.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "vegetable/v1/messages.proto";
+
+option go_package = "gitbub.com/escoutdoor/vegetable_store/common/pkg/api/vegetable/v1;vegetable";
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Vegetable Store Vegetable Service"
+    version: "1.0"
+    contact: {
+      name: "Ivan Popov"
+      email: "vanap387@gmail.com"
+    }
+  }
+  schemes: HTTP
+  schemes: HTTPS
+};
+
+service VegetableService {
+  rpc CreateVegetable(CreateVegetableRequest) returns (CreateVegetableResponse) {
+    option (google.api.http) = {
+      post: "/v1/vegetables"
+      body: "*"
+    };
+  }
+
+  rpc DeleteVegetable(DeleteVegetableRequest) returns (DeleteVegetableResponse) {
+    option (google.api.http) = {delete: "/v1/vegetables/{vegetable_id}"};
+  }
+
+  rpc GetVegetable(GetVegetableRequest) returns (GetVegetableResponse) {
+    option (google.api.http) = {get: "/v1/vegetables/{vegetable_id}"};
+  }
+
+  rpc ListVegetables(ListVegetablesRequest) returns (ListVegetablesResponse) {
+    option (google.api.http) = {get: "/v1/vegetables"};
+  }
+
+  rpc UpdateVegetable(UpdateVegetableRequest) returns (UpdateVegetableResponse) {
+    option (google.api.http) = {
+      patch: "/v1/vegetables/{update.vegetable_id}"
+      body: "update"
+    };
+  }
+
+  rpc BatchUpdateVegetables(BatchUpdateVegetablesRequest) returns (BatchUpdateVegetablesResponse) {
+    option (google.api.http) = {
+      post: "/v1/vegetables:batchUpdate"
+      body: "*"
+    };
+  }
+}

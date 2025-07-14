@@ -1,0 +1,26 @@
+services:
+  # order_service:
+  #   container_name: order_service
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   restart: on-failure
+  #   depends_on:
+  #     - pg
+  #   ports:
+  #     - 8080:8080
+  #   env_file: .env
+  #
+  pg:
+    image: postgres:17.5
+    ports:
+      - 5442:5432
+    environment:
+      - POSTGRES_DB=orders
+      - POSTGRES_USER=escoutdoor
+      - POSTGRES_PASSWORD=escoutdoor
+    volumes:
+      - pg:/var/lib/postgresql/data
+
+volumes:
+  pg:

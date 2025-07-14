@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package user.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "user/v1/messages.proto";
+
+option go_package = "gitbub.com/escoutdoor/vegetable_store/common/pkg/api/user/v1;user";
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Vegetable Store User Service"
+    version: "1.0"
+    contact: {
+      name: "Ivan Popov"
+      email: "vanap387@gmail.com"
+    }
+  }
+  schemes: HTTP
+  schemes: HTTPS
+};
+
+service UserService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {get: "/v1/users/{user_id}"};
+  }
+
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+  }
+
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
+    option (google.api.http) = {
+      patch: "/v1/users/{update.user_id}"
+      body: "update"
+    };
+  }
+
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.http) = {delete: "/v1/users/{user_id}"};
+  }
+}
