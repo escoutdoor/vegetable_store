@@ -1,15 +1,21 @@
 services:
-  # vegetable_service:
-  #   container_name: vegetable_service
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   restart: on-failure
-  #   depends_on:
-  #     - pg
-  #   ports:
-  #     - 8080:8080
-  #   env_file: .env
+  vegetable-service:
+    container_name: vegetable-service
+    restart: unless-stopped
+    env_file: ".env"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - pg
+    volumes:
+      - ../swagger:/app/swagger
+      # - ./:/app
+    ports:
+      - 8080:8080 # grpc
+      - 2040:2040 # gateway
+      - 9020:9020 # swagger
+      - 4040:4040 # prometheus server
 
   pg:
     image: postgres:17.5

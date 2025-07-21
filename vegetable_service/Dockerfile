@@ -1,14 +1,28 @@
-FROM golang:1.23.3-alpine3.21 as builder
+FROM golang:1.24-alpine3.21 AS builder
+
 WORKDIR /app
 
-COPY ["go.mod", "go.sum"] ./
-RUN go mod download
+COPY common ../common
 
-COPY . .
+COPY vegetable_service/go.mod vegetable_service/go.sum .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o ./bin/vegetable_service ./cmd/vegetable_service/main.go
+RUN go mod download 
+
+COPY vegetable_service/cmd cmd
+COPY vegetable_service/internal internal
+COPY vegetable_service/.env .env
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o vegetable_service ./cmd/vegetable_service/main.go
 
 FROM alpine:3.21
-COPY --from=builder /app/bin/vegetable_service /app
 
-CMD [ "/app/vegetable_service" ]
+COPY swagger swagger
+
+# COPY vegetable_service/third_party third_party
+COPY --from=builder /app/vegetable_service vegetable_service
+
+# # Make sure the binary is executable
+# RUN chmod +x ./vegetable_service
+
+CMD [ "./vegetable_service" ]
+# ENTRYPOINT ["./vegetable_service"]

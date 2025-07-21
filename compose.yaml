@@ -1,0 +1,119 @@
+services:
+  vegetable-service:
+    container_name: vegetable-service
+    restart: unless-stopped
+    env_file:
+      - vegetable_service/.env
+    # build:
+    #   context: ./vegetable_service
+    #   dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: vegetable_service/Dockerfile
+    depends_on:
+      - vegetable-service-pg
+      - alloy
+      - otel-collector
+      - loki
+      - prometheus
+    # volumes:
+      # - ./swagger:/app/swagger
+      # - ./:/app
+    ports:
+      - 8080:8080 # grpc
+      - 2040:2040 # gateway
+      - 9020:9020 # swagger
+      - 4040:4040 # prometheus server
+
+  vegetable-service-pg:
+    container_name: vegetable-service-pg
+    image: postgres:17.5
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_DB=vegetables
+      - POSTGRES_USER=escoutdoor
+      - POSTGRES_PASSWORD=escoutdoor
+    volumes:
+      - vegetable_service_postgres_data:/var/lib/postgresql/data
+
+  grafana:
+    container_name: grafana
+    restart: on-failure
+    image: grafana/grafana:11.6.1
+    environment:
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_BASIC_ENABLED=false
+    ports:
+      - 3000:3000
+    volumes:
+      - ./configs/grafana.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - loki
+
+  alloy:
+    container_name: alloy
+    restart: on-failure
+    image: grafana/alloy:v1.8.2
+    volumes:
+      - ./configs/config.alloy:/etc/alloy/config.alloy
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+    ports:
+      - 12345:12345
+
+  otel-collector:
+    container_name: otel-collector
+    restart: on-failure
+    image: otel/opentelemetry-collector-contrib
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    depends_on:
+      - jaeger
+    volumes:
+      - ./configs/otel.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - 1888:1888 # pprof extension
+      - 13133:13133 # health_check extension
+      - 4317:4317 # OTLP gRPC receiver
+
+  prometheus:
+    container_name: prometheus
+    restart: on-failure
+    image: prom/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - 9090:9090
+    volumes:
+      - ./configs/prometheus.yaml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+
+  loki:
+    container_name: loki
+    restart: on-failure
+    image: grafana/loki:3.4
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - 3100:3100
+    volumes:
+      - ./configs/loki.yaml:/etc/loki/local-config.yaml
+
+  jaeger:
+    container_name: jaeger
+    restart: on-failure
+    image: jaegertracing/all-in-one:1.48
+    ports:
+      - 16686:16686 # ui
+
+volumes:
+  vegetable_service_postgres_data:
+  grafana_data:
+  prometheus_data:
