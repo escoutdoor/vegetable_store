@@ -1,0 +1,470 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Vegetable Store Vegetable Service",
+    "version": "1.0",
+    "contact": {
+      "name": "Ivan Popov",
+      "email": "vanap387@gmail.com"
+    }
+  },
+  "tags": [
+    {
+      "name": "VegetableService"
+    }
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/vegetables": {
+      "get": {
+        "operationId": "VegetableService_ListVegetables",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListVegetablesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "description": "The maximum number of vegetables to return. The service may return fewer than\nthis value.\nIf unspecified or equals to 0, at most 50 vegetables will be returned.\nThe maximum value is 1000.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "offset",
+            "description": "Pagination offset (0-based)\nExample: 20",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "vegetableIds",
+            "description": "Filter by specific vegetable IDs\nExample: [\"14afdc88-596e-413d-98cc-d637b0c69c80\", \"e2c0a7d8-4a2f-4e8d-bd6a-8f8b8d7d8e9f\"]",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "VegetableService"
+        ]
+      },
+      "post": {
+        "operationId": "VegetableService_CreateVegetable",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateVegetableResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateVegetableRequest"
+            }
+          }
+        ],
+        "tags": [
+          "VegetableService"
+        ]
+      }
+    },
+    "/v1/vegetables/{update.vegetableId}": {
+      "patch": {
+        "operationId": "VegetableService_UpdateVegetable",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateVegetableResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "update.vegetableId",
+            "description": "Identifier of the vegetable\nMust be a valid UUID\nExample: \"14afdc88-596e-413d-98cc-d637b0c69c80\"",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "update",
+            "description": "The vegetable data to update\nThe update's \"vegetable_id\" field is used to identify the vegetable to update.\nFormat: /v1/vegetables/{user}",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name name = 2;",
+                  "title": "Optional. Name of the vegetable\nMust be between 3 and 25 characters long if provided.\nExample: \"Apples\""
+                },
+                "weight": {
+                  "type": "number",
+                  "format": "float",
+                  "title": "Optional. Weight\nMust be greater than 0 if provided\nExample: 0.4"
+                },
+                "price": {
+                  "type": "number",
+                  "format": "float",
+                  "title": "Optional. Price\nMust be greater than 0 if provided\nExample: 75.99"
+                },
+                "discountedPrice": {
+                  "type": "number",
+                  "format": "float",
+                  "title": "Optional. Discounted price of the vegetable per kg.\nMust be greater than 0 if provided\nExample: 69.99"
+                }
+              },
+              "title": "The vegetable data to update\nThe update's \"vegetable_id\" field is used to identify the vegetable to update.\nFormat: /v1/vegetables/{user}",
+              "required": [
+                "update"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "VegetableService"
+        ]
+      }
+    },
+    "/v1/vegetables/{vegetableId}": {
+      "get": {
+        "operationId": "VegetableService_GetVegetable",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetVegetableResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "vegetableId",
+            "description": "Identifier of the vegetable to get\nMust be a valid UUID\nExample: \"14afdc88-596e-413d-98cc-d637b0c69c80\"",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "VegetableService"
+        ]
+      },
+      "delete": {
+        "operationId": "VegetableService_DeleteVegetable",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteVegetableResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "vegetableId",
+            "description": "Identifier of the vegetable to delete\nMust be a valid UUID\nExample: \"14afdc88-596e-413d-98cc-d637b0c69c80\"",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "VegetableService"
+        ]
+      }
+    },
+    "/v1/vegetables:batchUpdate": {
+      "post": {
+        "operationId": "VegetableService_BatchUpdateVegetables",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BatchUpdateVegetablesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1BatchUpdateVegetablesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "VegetableService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1BatchUpdateVegetablesRequest": {
+      "type": "object",
+      "properties": {
+        "requests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1UpdateVegetableRequest"
+          },
+          "description": "The request message specifying the resources to update.\nA maximum of 1000 vegetables can be modified in a batch."
+        }
+      },
+      "required": [
+        "requests"
+      ]
+    },
+    "v1BatchUpdateVegetablesResponse": {
+      "type": "object",
+      "properties": {
+        "vegetables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Vegetable"
+          },
+          "description": "Vegetables updated."
+        }
+      }
+    },
+    "v1CreateVegetableRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the vegetable\nExample: \"Apples\""
+        },
+        "weight": {
+          "type": "number",
+          "format": "float",
+          "title": "Weight"
+        },
+        "price": {
+          "type": "number",
+          "format": "float",
+          "description": "Vegetable price per kg without discount."
+        },
+        "discountedPrice": {
+          "type": "number",
+          "format": "float",
+          "description": "Discounted price of the vegetable per kg.\nWhile there is no discount, it is equal to the price."
+        }
+      },
+      "required": [
+        "name",
+        "weight",
+        "price",
+        "discountedPrice"
+      ]
+    },
+    "v1CreateVegetableResponse": {
+      "type": "object",
+      "properties": {
+        "vegetableId": {
+          "type": "string",
+          "title": "Identifier of the created vegetable"
+        }
+      }
+    },
+    "v1DeleteVegetableResponse": {
+      "type": "object"
+    },
+    "v1GetVegetableResponse": {
+      "type": "object",
+      "properties": {
+        "vegetable": {
+          "$ref": "#/definitions/v1Vegetable",
+          "title": "Vegetable"
+        }
+      }
+    },
+    "v1ListVegetablesResponse": {
+      "type": "object",
+      "properties": {
+        "vegetables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Vegetable"
+          },
+          "description": "The list of vegetables."
+        },
+        "totalSize": {
+          "type": "string",
+          "format": "int64",
+          "description": "The total size of the list of vegetables."
+        }
+      }
+    },
+    "v1UpdateVegetableRequest": {
+      "type": "object",
+      "properties": {
+        "update": {
+          "$ref": "#/definitions/v1VegetableUpdateOperation",
+          "title": "The vegetable data to update\nThe update's \"vegetable_id\" field is used to identify the vegetable to update.\nFormat: /v1/vegetables/{user}"
+        },
+        "updateMask": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "update"
+      ]
+    },
+    "v1UpdateVegetableResponse": {
+      "type": "object"
+    },
+    "v1Vegetable": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Identifier of the vegetable"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name of the vegetable"
+        },
+        "weight": {
+          "type": "number",
+          "format": "float",
+          "title": "Weight"
+        },
+        "price": {
+          "type": "number",
+          "format": "float",
+          "description": "Vegetable price per kg without discount."
+        },
+        "discountedPrice": {
+          "type": "number",
+          "format": "float",
+          "description": "Discounted price of the vegetable per kg.\nWhile there is no discount, it is equal to the price."
+        }
+      }
+    },
+    "v1VegetableUpdateOperation": {
+      "type": "object",
+      "properties": {
+        "vegetableId": {
+          "type": "string",
+          "title": "Identifier of the vegetable\nMust be a valid UUID\nExample: \"14afdc88-596e-413d-98cc-d637b0c69c80\""
+        },
+        "name": {
+          "type": "string",
+          "description": "Name name = 2;",
+          "title": "Optional. Name of the vegetable\nMust be between 3 and 25 characters long if provided.\nExample: \"Apples\""
+        },
+        "weight": {
+          "type": "number",
+          "format": "float",
+          "title": "Optional. Weight\nMust be greater than 0 if provided\nExample: 0.4"
+        },
+        "price": {
+          "type": "number",
+          "format": "float",
+          "title": "Optional. Price\nMust be greater than 0 if provided\nExample: 75.99"
+        },
+        "discountedPrice": {
+          "type": "number",
+          "format": "float",
+          "title": "Optional. Discounted price of the vegetable per kg.\nMust be greater than 0 if provided\nExample: 69.99"
+        }
+      }
+    }
+  }
+}

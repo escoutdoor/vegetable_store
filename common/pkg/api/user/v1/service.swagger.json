@@ -1,0 +1,322 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Vegetable Store User Service",
+    "version": "1.0",
+    "contact": {
+      "name": "Ivan Popov",
+      "email": "vanap387@gmail.com"
+    }
+  },
+  "tags": [
+    {
+      "name": "UserService"
+    }
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/users": {
+      "get": {
+        "operationId": "UserService_ListUsers",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListUsersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "userIds",
+            "description": "Optional list of user identifiers (UUIDs) to filter by.\nIf provided, only users with these IDs will be returned.\nAll UUIDs in the list must be unique.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "limit",
+            "description": "Limit for pagination.\nMust be greater than or equal to 0.\nIf unspecified, at most 10 users will be returned.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "offset",
+            "description": "Optional offset for pagination.\nMust be greater than or equal to 0 if provided.\nIf unspecified, offset will be 0.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/v1/users/{update.userId}": {
+      "patch": {
+        "operationId": "UserService_UpdateUser",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "update.userId",
+            "description": "The identifier (UUID) of the user to update.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "update",
+            "description": "The user data to update\nThe update's \"user_id\" field is used to identify the user to update.\nFormat: /v1/users/{user}",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "firstName": {
+                  "type": "string",
+                  "description": "Optional: New first name for the user.\nMust be between 1 and 20 characters long if provided."
+                },
+                "lastName": {
+                  "type": "string",
+                  "description": "Optional: New last name for the user.\nMust be between 1 and 20 characters long if provided."
+                },
+                "email": {
+                  "type": "string",
+                  "description": "Optional: New email address for the user.\nMust be a valid email format if provided."
+                },
+                "phoneNumber": {
+                  "type": "string",
+                  "description": "Optional: New phone number for the user.\nShould be a valid phone number format if provided."
+                },
+                "password": {
+                  "type": "string",
+                  "title": "Optional: New password for the user.\nMust be at least 8 characters long.\nMust only contain alphanumeric characters (a-z, A-Z, 0-9)\nand the following special characters: !@#$%^\u0026*()-_+="
+                }
+              },
+              "title": "The user data to update\nThe update's \"user_id\" field is used to identify the user to update.\nFormat: /v1/users/{user}",
+              "required": [
+                "update"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/v1/users/{userId}": {
+      "get": {
+        "operationId": "UserService_GetUser",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "description": "The identifier (UUID) of the user to retrieve.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      },
+      "delete": {
+        "operationId": "UserService_DeleteUser",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "description": "The identifier (UUID) of the user to delete.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1DeleteUserResponse": {
+      "type": "object"
+    },
+    "v1GetUserResponse": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/v1User",
+          "description": "The retrieved user."
+        }
+      }
+    },
+    "v1ListUsersResponse": {
+      "type": "object",
+      "properties": {
+        "users": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1User"
+          },
+          "description": "The list of users."
+        },
+        "totalSize": {
+          "type": "string",
+          "format": "int64",
+          "description": "The total size of the list of users."
+        }
+      }
+    },
+    "v1UpdateUserResponse": {
+      "type": "object"
+    },
+    "v1User": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier (UUID) of the user."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Phone number of the user."
+        }
+      }
+    },
+    "v1UserUpdateOperation": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The identifier (UUID) of the user to update."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "Optional: New first name for the user.\nMust be between 1 and 20 characters long if provided."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Optional: New last name for the user.\nMust be between 1 and 20 characters long if provided."
+        },
+        "email": {
+          "type": "string",
+          "description": "Optional: New email address for the user.\nMust be a valid email format if provided."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Optional: New phone number for the user.\nShould be a valid phone number format if provided."
+        },
+        "password": {
+          "type": "string",
+          "title": "Optional: New password for the user.\nMust be at least 8 characters long.\nMust only contain alphanumeric characters (a-z, A-Z, 0-9)\nand the following special characters: !@#$%^\u0026*()-_+="
+        }
+      }
+    }
+  }
+}
