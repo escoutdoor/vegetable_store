@@ -1,6 +1,6 @@
 # Vegetable Store
 
-A cloud-native microservices-based platform built with Go for managing a vegetable store's operations.
+A microservice system for vegetable store management, built on Go using gRPC for inter-service communication and a complete observability stack.
 
 ## Architecture Overview
 
