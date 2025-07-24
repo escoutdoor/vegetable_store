@@ -2,9 +2,12 @@ package app
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
-	"sync"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"buf.build/go/protovalidate"
@@ -15,9 +18,11 @@ import (
 	"github.com/escoutdoor/vegetable_store/common/pkg/errwrap"
 	common_interceptor "github.com/escoutdoor/vegetable_store/common/pkg/interceptor"
 	"github.com/escoutdoor/vegetable_store/common/pkg/logger"
+	"github.com/escoutdoor/vegetable_store/common/pkg/tracing"
 	authv1_implementation "github.com/escoutdoor/vegetable_store/user_service/internal/api/auth/v1"
 	userv1_implementation "github.com/escoutdoor/vegetable_store/user_service/internal/api/user/v1"
 	"github.com/escoutdoor/vegetable_store/user_service/internal/interceptor"
+	"github.com/escoutdoor/vegetable_store/user_service/internal/metrics"
 	"github.com/escoutdoor/vegetable_store/user_service/internal/repository"
 	user_repository "github.com/escoutdoor/vegetable_store/user_service/internal/repository/user"
 	"github.com/escoutdoor/vegetable_store/user_service/internal/service"
@@ -25,15 +30,19 @@ import (
 	user_service "github.com/escoutdoor/vegetable_store/user_service/internal/service/user"
 	"github.com/escoutdoor/vegetable_store/user_service/internal/utils/token"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.uber.org/multierr"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
 type App struct {
-	config        *Config
-	grpcServer    *grpc.Server
-	gatewayServer *http.Server
+	config           *Config
+	grpcServer       *grpc.Server
+	gatewayServer    *http.Server
+	prometheusServer *http.Server
 
 	dbClient       database.Client
 	tokenProvider  token.Provider
@@ -53,12 +62,11 @@ func New(ctx context.Context, cfg *Config) (*App, error) {
 }
 
 func (a *App) Run(ctx context.Context) error {
-	wg := sync.WaitGroup{}
+	quitch := make(chan os.Signal, 1)
+	signal.Notify(quitch, syscall.SIGINT, syscall.SIGTERM)
 
-	wg.Add(2)
 	go func() {
 		logger.Info(ctx, "grpc server is running")
-		defer wg.Done()
 		if err := a.runGRPCServer(); err != nil {
 			logger.Fatal(ctx, "run grpc server", err)
 		}
@@ -66,24 +74,52 @@ func (a *App) Run(ctx context.Context) error {
 
 	go func() {
 		logger.Info(ctx, "grpc gateway server is running")
-		defer wg.Done()
-		if err := a.runGatewayServer(); err != nil {
-			logger.Fatal(ctx, "run grpc gateway server server", err)
+		if err := a.runGatewayServer(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Fatal(ctx, "run grpc gateway server", err)
 		}
 	}()
 
-	wg.Wait()
+	go func() {
+		logger.Info(ctx, "prometheus server is running")
+		if err := a.runPrometheusServer(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Fatal(ctx, "run prometheus server", err)
+		}
+	}()
+
+	<-quitch
+	ctx, cancel := context.WithTimeout(ctx, a.config.GracefullShutdownTimeout)
+	defer cancel()
+
+	if err := a.stop(ctx); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (a *App) stop(ctx context.Context) error {
+	logger.Info(ctx, "graceful shutdown started")
+	defer logger.Info(ctx, "graceful shutdown completed")
+	defer a.dbClient.Close()
+
+	return multierr.Combine(
+		a.gatewayServer.Shutdown(ctx),
+		a.prometheusServer.Shutdown(ctx),
+		a.gracefulShutdownGrpcServer(ctx),
+	)
 }
 
 func (a *App) initDeps(ctx context.Context) error {
 	deps := []func(ctx context.Context) error{
+		a.initTracing,
+		a.initMetrics,
 		a.initDBClient,
 		a.initRepositories,
 		a.initTokenProvider,
 		a.initServices,
 		a.initGRPCServer,
 		a.initGatewayServer,
+		a.initPrometheusServer,
 	}
 
 	for _, d := range deps {
@@ -92,6 +128,19 @@ func (a *App) initDeps(ctx context.Context) error {
 		}
 	}
 
+	return nil
+}
+
+func (a *App) initTracing(ctx context.Context) error {
+	if err := tracing.Init(ctx, a.config.Jaeger.Address(), a.config.AppName); err != nil {
+		return errwrap.Wrap("init tracing", err)
+	}
+
+	return nil
+}
+
+func (a *App) initMetrics(_ context.Context) error {
+	metrics.Init("vegetable_store", a.config.AppName)
 	return nil
 }
 
@@ -136,11 +185,16 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 		return errwrap.Wrap("new validator", err)
 	}
 
-	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
-		interceptor.ErrorsUnaryServerInterceptor(),
-		common_interceptor.ValidationUnaryServerInterceptor(validator),
-		common_interceptor.LoggingUnaryServerInterceptor(),
-	))
+	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+		grpc.ChainUnaryInterceptor(
+			interceptor.ErrorsUnaryServerInterceptor(),
+			interceptor.MetricsUnaryServerInterceptor(),
+			common_interceptor.LoggingUnaryServerInterceptor(),
+			common_interceptor.ValidationUnaryServerInterceptor(validator),
+			common_interceptor.RecoverUnaryServerInterceptor(),
+		),
+	)
 
 	authImpl := authv1_implementation.NewImplementation(a.authService)
 	userImpl := userv1_implementation.NewImplementation(a.userService)
@@ -155,19 +209,27 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 }
 
 func (a *App) initGatewayServer(ctx context.Context) error {
-	mux := runtime.NewServeMux()
+	gwMux := runtime.NewServeMux()
 
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	if err := userv1.RegisterUserServiceHandlerFromEndpoint(ctx, mux, a.config.GRPC.Address(), opts); err != nil {
+	if err := userv1.RegisterUserServiceHandlerFromEndpoint(ctx, gwMux, a.config.GRPC.Address(), opts); err != nil {
 		return errwrap.Wrap("register user service handler from endpoint", err)
 	}
 
-	if err := authv1.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, a.config.GRPC.Address(), opts); err != nil {
+	if err := authv1.RegisterAuthServiceHandlerFromEndpoint(ctx, gwMux, a.config.GRPC.Address(), opts); err != nil {
 		return errwrap.Wrap("register auth service handler from endpoint", err)
 	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/", gwMux)
+
+	mux.HandleFunc("/docs/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, a.config.Swagger.FilePath())
+	})
+	mux.Handle("/docs/", http.StripPrefix("/docs/", http.FileServer(http.Dir(a.config.Swagger.Path))))
 
 	httpServer := &http.Server{
 		Addr:              a.config.Gateway.Address(),
@@ -177,6 +239,19 @@ func (a *App) initGatewayServer(ctx context.Context) error {
 	}
 
 	a.gatewayServer = httpServer
+	return nil
+}
+
+func (a *App) initPrometheusServer(ctx context.Context) error {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	a.prometheusServer = &http.Server{
+		Addr:              a.config.Prometheus.Address(),
+		Handler:           mux,
+		ReadTimeout:       time.Second * 5,
+		ReadHeaderTimeout: time.Second * 5,
+	}
 	return nil
 }
 
@@ -199,4 +274,28 @@ func (a *App) runGatewayServer() error {
 	}
 
 	return nil
+}
+
+func (a *App) runPrometheusServer() error {
+	if err := a.prometheusServer.ListenAndServe(); err != nil {
+		return errwrap.Wrap("prometheus server listen and serve", err)
+	}
+
+	return nil
+}
+
+func (a *App) gracefulShutdownGrpcServer(ctx context.Context) error {
+	qch := make(chan struct{})
+
+	go func() {
+		a.grpcServer.GracefulStop()
+		close(qch)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-qch:
+		return nil
+	}
 }

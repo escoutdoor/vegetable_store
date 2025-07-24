@@ -3,16 +3,23 @@ package app
 import (
 	"fmt"
 	"net"
+	"path"
+	"time"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
+	AppName                  string        `env:"APP_NAME,required"`
+	GracefullShutdownTimeout time.Duration `env:"GRACEFULL_SHUTDOWN_TIMEOUT,required"`
+
 	GRPC            GRPC            `envPrefix:"GRPC_SERVER_"`
 	Gateway         Gateway         `envPrefix:"GATEWAY_SERVER_"`
 	Postgres        Postgres        `envPrefix:"POSTGRES_"`
-	VegetableClient VegetableClient `envPrefix:"VEGETABLE_CLIENT_"`
+	Prometheus      Prometheus      `envPrefix:"PROMETHEUS_SERVER_"`
+	Jaeger          Jaeger          `envPrefix:"JAEGER_"`
+	Swagger         Swagger         `envPrefix:"SWAGGER_"`
+	VegetableClient VegetableClient `envPrefix:"VEGETABLE_SERVICE_CLIENT_"`
 }
 
 type GRPC struct {
@@ -37,6 +44,33 @@ type Postgres struct {
 	Dsn string `env:"DSN"`
 }
 
+type Prometheus struct {
+	Host string `env:"HOST,required"`
+	Port string `env:"PORT,required"`
+}
+
+func (c *Prometheus) Address() string {
+	return net.JoinHostPort(c.Host, c.Port)
+}
+
+type Jaeger struct {
+	Host string `env:"HOST,required"`
+	Port string `env:"PORT,required"`
+}
+
+func (c *Jaeger) Address() string {
+	return net.JoinHostPort(c.Host, c.Port)
+}
+
+type Swagger struct {
+	Path     string `env:"PATH,required"`
+	FileName string `env:"FILENAME,required"`
+}
+
+func (c *Swagger) FilePath() string {
+	return path.Join(c.Path, c.FileName)
+}
+
 type VegetableClient struct {
 	Host string `env:"HOST,required"`
 	Port string `env:"PORT,required"`
@@ -48,14 +82,7 @@ func (c *VegetableClient) Address() string {
 
 func LoadConfig(path string) (*Config, error) {
 	cfg := new(Config)
-
-	err := godotenv.Load(path)
-	if err != nil {
-		return nil, fmt.Errorf("load config: %w", err)
-	}
-
-	err = env.Parse(cfg)
-	if err != nil {
+	if err := env.Parse(cfg); err != nil {
 		return nil, fmt.Errorf("parse env: %w", err)
 	}
 

@@ -18,11 +18,6 @@ FROM alpine:3.21
 
 COPY swagger swagger
 
-# COPY vegetable_service/third_party third_party
 COPY --from=builder /app/vegetable_service vegetable_service
 
-# # Make sure the binary is executable
-# RUN chmod +x ./vegetable_service
-
 CMD [ "./vegetable_service" ]
-# ENTRYPOINT ["./vegetable_service"]

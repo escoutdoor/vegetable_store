@@ -13,7 +13,6 @@ run: build
 .PHONY:migrations-up
 migrations-up:
 	GOOSE_DRIVER=postgres GOOSE_DBSTRING=${POSTGRES_DSN} goose -dir=migrations up
-	GOOSE_DRIVER=postgres GOOSE_DBSTRING=${POSTGRES_DSN} goose -dir=migrations up
 
 .PHONY:migrations-down
 migrations-down:

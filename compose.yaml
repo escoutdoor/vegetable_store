@@ -4,9 +4,6 @@ services:
     restart: unless-stopped
     env_file:
       - vegetable_service/.env
-    # build:
-    #   context: ./vegetable_service
-    #   dockerfile: Dockerfile
     build:
       context: .
       dockerfile: vegetable_service/Dockerfile
@@ -16,14 +13,50 @@ services:
       - otel-collector
       - loki
       - prometheus
-    # volumes:
-      # - ./swagger:/app/swagger
-      # - ./:/app
     ports:
       - 8080:8080 # grpc
       - 2040:2040 # gateway
-      - 9020:9020 # swagger
       - 4040:4040 # prometheus server
+
+  user-service:
+    container_name: user-service
+    restart: unless-stopped
+    env_file:
+      - user_service/.env
+    build:
+      context: .
+      dockerfile: user_service/Dockerfile
+    depends_on:
+      - user-service-pg
+      - alloy
+      - otel-collector
+      - loki
+      - prometheus
+    ports:
+      - 8070:8070 # grpc
+      - 2030:2030 # gateway
+      - 4030:4030 # prometheus server
+
+  order-service:
+    container_name: order-service
+    restart: unless-stopped
+    env_file:
+      - order_service/.env
+    build:
+      context: .
+      dockerfile: order_service/Dockerfile
+    depends_on:
+      - user-service
+      - vegetable-service
+      - order-service-pg
+      - alloy
+      - otel-collector
+      - loki
+      - prometheus
+    ports:
+      - 8060:8060 # grpc
+      - 2020:2020 # gateway
+      - 4020:4020 # prometheus server
 
   vegetable-service-pg:
     container_name: vegetable-service-pg
@@ -36,6 +69,30 @@ services:
       - POSTGRES_PASSWORD=escoutdoor
     volumes:
       - vegetable_service_postgres_data:/var/lib/postgresql/data
+
+  user-service-pg:
+    container_name: user-service-pg
+    image: postgres:17.5
+    ports:
+      - 5422:5432
+    environment:
+      - POSTGRES_DB=users
+      - POSTGRES_USER=escoutdoor
+      - POSTGRES_PASSWORD=escoutdoor
+    volumes:
+      - user_service_postgres_data:/var/lib/postgresql/data
+
+  order-service-pg:
+    container_name: order-service-pg
+    image: postgres:17.5
+    ports:
+      - 5412:5432
+    environment:
+      - POSTGRES_DB=orders
+      - POSTGRES_USER=escoutdoor
+      - POSTGRES_PASSWORD=escoutdoor
+    volumes:
+      - order_service_postgres_data:/var/lib/postgresql/data
 
   grafana:
     container_name: grafana
@@ -115,5 +172,7 @@ services:
 
 volumes:
   vegetable_service_postgres_data:
+  user_service_postgres_data:
+  order_service_postgres_data:
   grafana_data:
   prometheus_data:

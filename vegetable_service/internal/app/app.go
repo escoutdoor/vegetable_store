@@ -98,7 +98,7 @@ func (a *App) Run(ctx context.Context) error {
 func (a *App) stop(ctx context.Context) error {
 	logger.Info(ctx, "graceful shutdown started")
 	defer logger.Info(ctx, "graceful shutdown completed")
-	a.dbClient.Close()
+	defer a.dbClient.Close()
 
 	return multierr.Combine(
 		a.gatewayServer.Shutdown(ctx),
@@ -184,6 +184,7 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 			interceptor.MetricsUnaryServerInterceptor(),
 			common_interceptor.LoggingUnaryServerInterceptor(),
 			common_interceptor.ValidationUnaryServerInterceptor(validator),
+			common_interceptor.RecoverUnaryServerInterceptor(),
 		),
 	)
 
@@ -273,6 +274,7 @@ func (a *App) gracefulShutdownGrpcServer(ctx context.Context) error {
 	qch := make(chan struct{})
 
 	go func() {
+		time.Sleep(time.Second * 11)
 		a.grpcServer.GracefulStop()
 		close(qch)
 	}()

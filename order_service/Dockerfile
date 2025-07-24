@@ -1,14 +1,23 @@
-FROM golang:1.23.3-alpine3.21 as builder
+FROM golang:1.24-alpine3.21 AS builder
+
 WORKDIR /app
 
-COPY ["go.mod", "go.sum"] ./
-RUN go mod download
+COPY common ../common
 
-COPY . .
+COPY order_service/go.mod order_service/go.sum .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o ./bin/order_service ./cmd/order_service/main.go
+RUN go mod download 
+
+COPY order_service/cmd cmd
+COPY order_service/internal internal
+COPY order_service/.env .env
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o order_service ./cmd/order_service/main.go
 
 FROM alpine:3.21
-COPY --from=builder /app/bin/order_service /app
 
-CMD [ "/app/order_service" ]
+COPY swagger swagger
+
+COPY --from=builder /app/order_service order_service
+
+CMD [ "./order_service" ]

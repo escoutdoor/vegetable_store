@@ -1,0 +1,362 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Vegetable Store Order Service",
+    "version": "1.0",
+    "contact": {
+      "name": "Ivan Popov",
+      "email": "vanap387@gmail.com"
+    }
+  },
+  "tags": [
+    {
+      "name": "OrderService"
+    }
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/orders": {
+      "get": {
+        "operationId": "OrderService_ListOrders",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListOrdersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "description": "Identifier of the user who made orders\nMust be a valid uuid.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "description": "The maximum number of orders to return. The service may return fewer than\nthis value.\nIf unspecified or equals to 0, at most 50 orders will be returned.\nThe maximum value is 1000.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "offset",
+            "description": "Pagination offset (0-based)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "orderIds",
+            "description": "Filter by specific order IDs\nExample: [\"14afdc88-596e-413d-98cc-d637b0c69c80\", \"e2c0a7d8-4a2f-4e8d-bd6a-8f8b8d7d8e9f\"]",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "OrderService"
+        ]
+      },
+      "post": {
+        "operationId": "OrderService_CreateOrder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateOrderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateOrderRequest"
+            }
+          }
+        ],
+        "tags": [
+          "OrderService"
+        ]
+      }
+    },
+    "/v1/orders/{orderId}": {
+      "get": {
+        "operationId": "OrderService_GetOrder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetOrderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "orderId",
+            "description": "Identifier of the order.\nMust be a valid uuid.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OrderService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1AddressInfo": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "description": "Address.\nThe address where the order will be delivered."
+        }
+      }
+    },
+    "v1CreateOrderRequest": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Identifier of the user who made the order.\nMust be a valid uuid."
+        },
+        "orderItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1OrderItemInput"
+          },
+          "description": "Vegetables that are selected to be ordered.\nMin number of items - 1."
+        }
+      },
+      "required": [
+        "userId",
+        "orderItems"
+      ]
+    },
+    "v1CreateOrderResponse": {
+      "type": "object",
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "description": "Identifier of the order that was just created."
+        }
+      }
+    },
+    "v1GetOrderResponse": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "$ref": "#/definitions/v1Order",
+          "title": "Order.\nContains detailed information about the order,\nthe recipient and the vegetables that were ordered"
+        }
+      }
+    },
+    "v1ListOrdersResponse": {
+      "type": "object",
+      "properties": {
+        "orders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Order"
+          },
+          "description": "The list of orders."
+        },
+        "totalSize": {
+          "type": "string",
+          "format": "int64",
+          "description": "The total size of the list of orders."
+        }
+      }
+    },
+    "v1Order": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of the order.\nMust be a valid uuid."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Identifier of the user who made the order.\nMust be a valid uuid."
+        },
+        "totalAmount": {
+          "type": "number",
+          "format": "float",
+          "description": "Total amount."
+        },
+        "orderItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1OrderItem"
+          },
+          "description": "Order items."
+        }
+      }
+    },
+    "v1OrderItem": {
+      "type": "object",
+      "properties": {
+        "orderItemId": {
+          "type": "string",
+          "description": "Identifier of the order item."
+        },
+        "vegetableId": {
+          "type": "string",
+          "description": "Identifier of the vegetable.\nMust be a valid uuid."
+        },
+        "weight": {
+          "type": "number",
+          "format": "float",
+          "title": "Weight of the vegetable\nMust be greater that 0.0 kg"
+        },
+        "price": {
+          "type": "number",
+          "format": "float",
+          "description": "Vegetable price per kg without discount."
+        },
+        "discountedPrice": {
+          "type": "number",
+          "format": "float",
+          "description": "Discounted price of the vegetable per kg.\nWhile there is no discount, it is equal to the price."
+        },
+        "recipientInfo": {
+          "$ref": "#/definitions/v1RecipientInfo",
+          "description": "Recipient information.\nThere provided detailed information about recipient."
+        },
+        "addressInfo": {
+          "$ref": "#/definitions/v1AddressInfo",
+          "description": "Address.\nThe address where this part of order will be delivered."
+        }
+      },
+      "required": [
+        "vegetableId",
+        "weight",
+        "price",
+        "discountedPrice",
+        "recipientInfo",
+        "addressInfo"
+      ]
+    },
+    "v1OrderItemInput": {
+      "type": "object",
+      "properties": {
+        "vegetableId": {
+          "type": "string",
+          "description": "Identifier of the vegetable.\nMust be a valid uuid."
+        },
+        "weight": {
+          "type": "number",
+          "format": "float",
+          "title": "Weight of the vegetable\nMust be greater that 0.0 kg"
+        },
+        "recipientInfo": {
+          "$ref": "#/definitions/v1RecipientInfo",
+          "description": "Recipient information.\nThere provided detailed information about recipient."
+        },
+        "addressInfo": {
+          "$ref": "#/definitions/v1AddressInfo",
+          "description": "Address.\nThe address where this part of order will be delivered."
+        }
+      },
+      "required": [
+        "vegetableId",
+        "weight",
+        "recipientInfo",
+        "addressInfo"
+      ]
+    },
+    "v1RecipientInfo": {
+      "type": "object",
+      "properties": {
+        "firstName": {
+          "type": "string",
+          "description": "First name of the order recipient.\nMust be at least 2 characters long."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the order recipient.\nMust be at least 2 characters long."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Phone number of the recipient.\nMust be 9 numbers long."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email of the recipient.\nMust be a valid email address."
+        }
+      }
+    }
+  }
+}

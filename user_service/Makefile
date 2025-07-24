@@ -1,4 +1,4 @@
-include .env
+export POSTGRES_DSN=postgres://escoutdoor:escoutdoor@localhost:5422/users
 
 .PHONY:build
 build:

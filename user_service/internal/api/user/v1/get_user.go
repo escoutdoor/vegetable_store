@@ -8,6 +8,7 @@ import (
 )
 
 func (i *Implementation) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*userv1.GetUserResponse, error) {
+	panic("something happened to get user handler")
 	user, err := i.userService.GetUser(ctx, req.GetUserId())
 	if err != nil {
 		return nil, err
